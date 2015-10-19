@@ -23,7 +23,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <math.h>
 #include "mex.h"
 #include "matrix.h"
-// Macro for MAX
 #define MAX(X, Y) (((X) < (Y)) ? (Y) : (X))
 
 /* 
@@ -42,9 +41,10 @@ Output:
           https://en.wikipedia.org/wiki/Sample_entropy
 */
 double calcSampleEntropy(double data[], int numSamples, int wlen, double r, int shift) {
-    // initialise
     int A=0; 
     int B=0;
+    int i,j,k;
+    double m;
     
     /* ok, now we go through all windows data_i ... data_i+wlen and calculate the 
        Chebyshev distance to all the _following_ windows. As the distance is symmetric,
@@ -57,31 +57,33 @@ double calcSampleEntropy(double data[], int numSamples, int wlen, double r, int 
             - - - - x 
             - - - - -
     */ 
-    for (int i=0; i < numSamples-wlen*shift-shift; i += shift) {
-        // compare to all following windows > i
-        for (int j=i+shift; j < numSamples-wlen*shift-shift; j+=shift) {
-            double m = 0; // maximum so far
-            for (int k=0; k < wlen; k++) 
-                // get max cheb. distance
+    for (i=0; i < numSamples-wlen*shift-shift; i += shift) {
+        /* compare to all following windows > i */
+        for (j=i+shift; j < numSamples-wlen*shift-shift; j+=shift) {
+            m = 0; /* maximum so far */
+            for (k=0; k < wlen; k++) 
+                /* get max cheb. distance */
                 m = MAX(m, fabs(data[i+k*shift]-data[j+k*shift]));
-            // first case, distance lower in first wlen positions
+            /* first case, distance lower in first wlen positions */
             if (m < r) B++; 
-            // Second case, distance lower if we add the next element
+            /* Second case, distance lower if we add the next element */
             if (MAX(m,fabs(data[i+wlen*shift]-data[j+wlen*shift])) < r) A++;
         }
     }
-    // return -log A/B
+    /* return -log A/B */
     if (A>0 && B >0)
         return (-1 * log(((double) A) / ((double) B)));
     else
         return 0;
 }
 
-// mex function
+/* mex function */
 void mexFunction(int nlhs, mxArray *plhs[],
                  int nrhs, const mxArray *prhs[]) {
     
-    double result = calcSampleEntropy(mxGetPr(prhs[0]), (int) mxGetM(prhs[0]), (int) mxGetScalar(prhs[1]), (double) mxGetScalar(prhs[2]), (int) mxGetScalar(prhs[3]));
+    double result;
+    result = calcSampleEntropy(mxGetPr(prhs[0]), (int) mxGetM(prhs[0]), (int) mxGetScalar(prhs[1]), (double) mxGetScalar(prhs[2]), (int) mxGetScalar(prhs[3]));
     plhs[0] = mxCreateDoubleScalar(result);
 }
+
 
